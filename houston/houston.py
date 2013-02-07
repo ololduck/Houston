@@ -6,7 +6,7 @@ import os
 
 
 class Houston:
-    """Main Houston module"""
+    """Main Houston class"""
     def __init__(self):
         pass
 
@@ -16,3 +16,5 @@ class Houston:
     def _load_modules(self):
         pass
 
+    def start(self):
+        pass
