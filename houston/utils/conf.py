@@ -2,16 +2,16 @@
 This is the main conf module for Houston. IT checks for values in multiple places:
  * Env vars
  * cli options
- * json-style or ini-style file conf
+ * json-style
 """
 
 import json
 import os
-import ConfigParser
 
 # TODO: Refactor this class so it is more stream-lined
 
 # FIXME: Only JSON will be available for now
+
 
 class Configuration:
 
@@ -30,15 +30,10 @@ class Configuration:
         value = self._get_value_env(key)
         if(value is not None):
             return value
-        # value = self._get_value_ini(key)
-        # if(value is not None):
-        #     return value
         return None
-    def save(self, to="json", filename="houston.json"):
-        if(to == "json"):
-            self._save_to_json(filename)
-        elif(to == "ini"):
-            raise NotImplementedError
+
+    def save(self, filename="conf/houston.json"):
+        self._save_to_json(filename)
 
     def _save_to_json(self, file_name):
         with open(file_name, 'w+') as f:
@@ -46,8 +41,8 @@ class Configuration:
 
     def _get_value_json(self, key):
         if(self.json is not None):
-            found_key = None
-            if( key in self.json):
+            # found_key = None
+            if(key in self.json):
                 return self.json[key]
             # TODO: find a convenient way to walk trought all the json tree
 
@@ -71,22 +66,13 @@ class Configuration:
         #         i = i + 1
         return None
 
-    def _parse_json_file(self, file_name="houston.json"):
+    def _parse_json_file(self, file_name="conf/houston.json"):
         try:
             data = ""
             with open(file_name, 'r') as f:
                 data = f.read()
             self.json = json.loads(data)
-            if( self.get_value("debug") is not None and self.get_value("verbosity") >=1):
+            if(self.get_value("debug") is not None and self.get_value("verbosity") >= 1):
                 print("JSON config from file %s:\n%s" % (file_name, json.dumps(self.json)))
-        except e:
+        except:
             self.json = None
-
-    def _parse_ini_file(self, file_name="houston.ini"):
-        raise NotImplementedError
-        try:
-            cfgp = ConfigParser.SafeConfigParser(None)
-            cfgp.read(file_name)
-            self.ini = cfeg
-        except e:
-            self.ini = None
