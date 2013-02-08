@@ -15,7 +15,6 @@ class Adapter:
     def __init__(self, conf):
         if(conf is not None):
             self.conf = conf
-            print conf
         else:
             raise Exception("%s: No configuration given" % NAME)
 
@@ -44,3 +43,5 @@ class Adapter:
     def start(self):
         self.loop()
 
+    def get_id_info(self):
+        return (NAME, ADAPTER_ID_STRING, VERSION_STRING)
