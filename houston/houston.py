@@ -128,11 +128,10 @@ def parse_arg_commands(args=()):
     i = 1
     for arg in args[1:]:
         if(arg == "new-adapter"):
-            gen_adapter_skel(args[++i])
+            gen_adapter_skel(args[i+1])
         elif(arg == "new-module"):
-            gen_module_skel(args[++i])
-        else:
-            i += 1
+            gen_module_skel(args[i + 1])
+        i = i + 1
 
 
 if __name__ == '__main__':
