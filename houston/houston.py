@@ -109,7 +109,34 @@ class Houston:
                             a.send(r[1](data))
 
 
+def gen_adapter_skel(arg=None):
+    if(arg is not None):
+        with open('adapters/skeleton', 'r') as f:
+            with open('adapters/adapter_%s.py' % arg, 'w+') as f1:
+                d = f.read()
+                d = d.replace("ADAPTER_ID_STRING = 'adapter_skeleton'", "ADAPTER_ID_STRING = 'adapter_%s'" % arg)
+                d = d.replace("NAME = 'Skeleton adapter'", "NAME = '%s adapter'" % arg)
+                f1.write(d)
+    sys.exit()
+
+
+def gen_module_skel(arg=None):
+    pass
+
+
+def parse_arg_commands(args=()):
+    i = 1
+    for arg in args[1:]:
+        if(arg == "new-adapter"):
+            gen_adapter_skel(args[++i])
+        elif(arg == "new-module"):
+            gen_module_skel(args[++i])
+        else:
+            i += 1
+
+
 if __name__ == '__main__':
+    parse_arg_commands(sys.argv)
     bot = Houston(sys.argv[1:])
     try:
         bot.run()
