@@ -11,10 +11,10 @@ NAME = "Base Mod"
 
 class Mod:
     """docstring for Mod"""
-    def __init__(self, name, conf=None):
-        self.bot_name = name
+    def __init__(self, conf=None):
+        self.bot_name = conf["bot_name"]
         self.regex = [
-            ['hi, %s' % self.bot_name, self._reply_hi],
+            ['(hi)|(hello)(, %s)?' % self.bot_name, self._reply_hi],
             ['how old are you\?', self._return_age]
         ]
         if(conf is None):
@@ -27,3 +27,5 @@ class Mod:
     def _return_age(self, msg):
         return "I am %s years old." % str(self.conf['age'])
 
+    def get_id_info(self):
+        return (NAME, MOD_ID_STRING, VERSION_STRING)

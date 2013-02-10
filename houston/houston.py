@@ -30,7 +30,7 @@ class Houston:
         self._load_modules()
 
     def _load_adapters(self):
-        regex = re.compile(r'(adapter_\w+).py')
+        regex = re.compile(r'^(adapter_\w+).py$')
         adapters = []
         for fil in os.listdir('adapters'):
             match = regex.match(fil)
@@ -38,13 +38,13 @@ class Houston:
                 adapter = my_import('adapters.%s' % match.group(1))
                 if adapter not in adapters:
                     adapters.append(adapter)
-                    print("Found adapter \'%s\' version %s." % (adapter.NAME, adapter.VERSION_STRING))
+                    print("Found adapter \'%s\'(%s) version %s." % (adapter.NAME, adapter.ADAPTER_ID_STRING, adapter.VERSION_STRING))
         if(self.adapters == []):
             raise Exception("No suitable adapters found!")
         self.adapters = adapters
 
     def _load_modules(self):
-        regex = re.compile(r'(mod_\w+).py')
+        regex = re.compile(r'^(mod_\w+).py')
         mods = []
         self.regexs = []
         for fil in os.listdir('modules'):
@@ -55,8 +55,12 @@ class Houston:
                     conf = None
                     with open('conf/%s.json' % mod.MOD_ID_STRING, 'r') as f:
                         conf = json.loads(f.read())
-                    m = mod.Mod(self.conf.get_value('bot_name'), conf)
-                    if(not self._is_mod_already_present(mods, m)):
+                    if(conf is not None):
+                        conf["bot_name"] = self.conf.get_value("bot_name")
+                        if(not "debug" in conf or (conf["debug"] is False)):
+                            conf["debug"] = self.conf.get_value("debug")
+                    m = mod.Mod(conf)
+                    if(not self._is_element_already_present(mods, m)):
                         print("Found module \'%s\' (%s) version %s." % (mod.NAME, mod.MOD_ID_STRING, mod.VERSION_STRING))
                         for r_conf in m.regex:
                             print("Registering '%s' to %s." % (r_conf[0], r_conf[1]))
@@ -67,36 +71,32 @@ class Houston:
         if(mods == []):
             raise Exception("No modules found! Remember: i can't do anything without commands!")
         self.mods = mods
-        print self.regexs
         for r in self.regexs:
-            print(r)
             r[0] = re.compile(r[0])
 
-    def _is_mod_already_present(self, mods, mod):
-        for m in mods:
-            if(m.__class__ == mod.__class__):
+    def _is_element_already_present(self, lst, elem):
+        for e in lst:
+            if(e.__class__ == elem.__class__):
                 return True
         return False
-
-    def _load_regexes(self):
-        self.regexs = ()
-        for mod in self.mods:
-            try:
-                conf = None
-                with open('conf/%s.json' % mod.MOD_ID_STRING, 'r') as f:
-                    conf = json.loads(f.read())
-                m = mod.Mod(self.conf.get_value('bot_name'), conf)
-                for r_conf in m.regex:
-                    print("Registering '%s' to %s." % (r_conf[0], r_conf[1]))
-                    self.regexs += r_conf
-            except Exception as e:
-                print(e)
 
     def run(self):
         adapters = []
         for a in self.adapters:
-            adapters.append(a.Adapter(self.conf.json))
+            conf = None
+            with open("conf/" + a.ADAPTER_ID_STRING + ".json", 'r') as f:
+                conf = json.loads(f.read())
+            if(conf is not None):
+                if("disabled" in conf and conf["disabled"] is True):
+                    continue
+                conf["bot_name"] = self.conf.get_value("bot_name")
+                if(conf["debug"] is False):
+                    conf["debug"] = self.conf.get_value("debug")
+            adapters.append(a.Adapter(conf))
+        if(adapters == []):
+            raise Exception("No communication Adapters enabled! I can not do anything.")
         for a in adapters:
+            print("Starting interface %s(%s) v%s" % a.get_id_info())
             thread = threading.Thread(target=a.start)
             thread.start()
         while True:
