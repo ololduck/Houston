@@ -1,0 +1,8 @@
+{
+    "enabled": true,
+    "debug": true,
+
+    "server": "irc.netrusk.net",
+    "port": 6667,
+    "chan": "#Houston"
+}

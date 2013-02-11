@@ -1,10 +1,19 @@
 """
-This is a Skeleton adapter. It explains the basic structure of an adapter.
+
+irc adapter
+
+It is still a WIP
+
+TODO : make it recover from deconnection
+
 """
 
 ADAPTER_ID_STRING = 'adapter_irc'
-NAME = 'irc adapter'
-VERSION_STRING = '0.0.1'
+NAME = 'IRC adapter'
+VERSION_STRING = '0.1.0'
+
+import socket
+import re
 
 
 class Adapter:
@@ -17,22 +26,80 @@ class Adapter:
             raise Exception("%s: No configuration given" % NAME)
 
         self.data_available = False
-        self.data = ""
+        self.waiting_data = []
+
+        self.protocol_specific = {
+            "^PING": self._pong,
+            " :End of /MOTD command\\.": self._join,
+            "^ERROR :Closing Link: ": self._stop
+        }
+
+        self.go = True
+
+        self.irc = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    def _stop(self):
+        self.go = False
+
+    def _send_to_serv(self, line):
+        self.irc.send("%s\n" % str(line))
+
+    def _pong(self, msg):
+        """Keeps the link alive"""
+        self.sendToServ("PONG %s" % (msg.split()[1]))
+
+    def _join(self, chan):
+        self._send_to_serv("JOIN %s" % chan)
+
+    def _get_target(self, msg):
+        """Obtains sender's name from message"""
+        to = msg[msg.find("PRIVMSG ") + 8:msg.find(" :")]
+        return to
+
+    def _get_message(self, msg):
+        """ Obtains the message from the raw data"""
+        message = msg[msg.find(' :') + 2:]
+        return message
 
     def read(self):
-        return {"sender": "Sender of the message if any", "full_message": "All the message content, without the metadata, like author, time..."}
+        if(self.data_available):
+            msg = self.waiting_data[0]
+            del self.waiting_data[0]
+            if(len(self.waiting_data) == 0):
+                self.data_available = False
+            return {"sender": self._get_target(msg), "full_message": self._get_message(msg)}
+        else:
+            return None
 
     def send(self, msg, to=None):
-        # Here is the function called when a message needs to be passed.
-        pass
+        for i in re.split("\r|\n", str(msg)):
+            for j in range(1 + len(i) / 400):
+                self.sendToServ("PRIVMSG %s :%s" % (to, i[400 * j:400 * (j + 1)]))
 
     def loop(self):
         # This is the main loop of the adapter. It should probalby try to recieve data, set the self.data_available flag to True, and store the data
-        while True:
-            pass
+        while self.go:
+            data = re.split("\r|\n", self.irc.recv(4096))
+            for i in data:
+                matched = False
+                for j in self.protocol_specific:
+                    match = re.search(j, i)
+                    if(match):
+                        self.protocol_specific[j]()
+                        matched = True
+                if(not matched):
+                    self.waiting_data.append(i)
+                    self.data_available = True
+        self.irc.shutdown(socket.SHUT_RDWR)
 
     def start(self):
         # This is called to start the adapter. All protocol-specific communication may be done here, before calling self.loop().
+        if(self.conf["debug"]):
+            print("\nConnecting to %s:%s as %s\n" % (self.conf["server"], self.conf["port"], self.conf["bot_name"]))
+        self.irc.connect((self.conf["server"], self.conf["port"]))
+        self._send_to_serv("NICK %s" % self.conf["bot_name"])
+        self._send_to_serv("USER %s %s %s :%s" % self.conf["bot_name"] * 4)
+        self._join(self.conf["chan"])
         self.loop()
 
     def get_id_info(self):
