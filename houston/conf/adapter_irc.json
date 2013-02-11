@@ -4,5 +4,8 @@
 
     "server": "irc.netrusk.net",
     "port": 6667,
-    "chan": "#Houston"
+    "channels": [
+        "#Houston",
+        "#42"
+        ]
 }

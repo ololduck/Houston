@@ -29,7 +29,13 @@ class Adapter:
         return d
 
     def read(self):
-        return {"sender": "shell", "full_message": self._read()}
+        return {
+            "from": "shell",
+            "to": "shell",
+            "room": None,
+            "interface": self.__class__,
+            "full_message": self._read()
+        }
 
     def send(self, msg, to=None):
         print(msg)

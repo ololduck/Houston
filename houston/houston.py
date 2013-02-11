@@ -6,6 +6,7 @@ import os
 import re
 import json
 import threading
+import time
 
 import utils.conf
 
@@ -106,7 +107,10 @@ class Houston:
                     for r in self.regexs:
                         match = r[0].match(data["full_message"])
                         if(match):
-                            a.send(r[1](data))
+                            data["interface"] = a
+                            resp = r[1](data)
+                            a.send(resp)
+            time.sleep(0.1)
 
 
 def gen_adapter_skel(arg=None):
@@ -121,14 +125,21 @@ def gen_adapter_skel(arg=None):
 
 
 def gen_module_skel(arg=None):
-    pass
+    if(arg is not None):
+        with open('modules/skeleton', 'r') as f:
+            with open('modules/mod_%s.py' % arg, 'w+') as f1:
+                d = f.read()
+                d = d.replace("MOD_ID_STRING = 'mod_skeleton'", "MOD_ID_STRING = 'mod_%s'" % arg)
+                d = d.replace("NAME = 'Skeleton module'", "NAME = '%s module'" % arg)
+                f1.write(d)
+    sys.exit()
 
 
 def parse_arg_commands(args=()):
     i = 1
     for arg in args[1:]:
         if(arg == "new-adapter"):
-            gen_adapter_skel(args[i+1])
+            gen_adapter_skel(args[i + 1])
         elif(arg == "new-module"):
             gen_module_skel(args[i + 1])
         i = i + 1
